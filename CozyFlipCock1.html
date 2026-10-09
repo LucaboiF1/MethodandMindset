@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Flip Clock Widget</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clockBase: '#fcfce1',
+                        clockText: '#2e2e2e',
+                        cardBg: '#f2f2d4',
+                        cardDivider: '#e3e3c1',
+                    },
+                    fontFamily: {
+                        clock: ['Fredoka', 'sans-serif'],
+                        sans: ['Quicksand', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Smooth, realistic 3D Flip Card Animation */
+        .flip-card {
+            perspective: 400px;
+            position: relative;
+        }
+
+        .card-top, .card-bottom, .card-flip-top, .card-flip-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+            overflow: hidden;
+            background-color: #f2f2d4;
+            color: #2e2e2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0.75rem;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        /* Upper half positioning */
+        .card-top, .card-flip-top {
+            top: 0;
+            align-items: flex-end;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom: 1px solid rgba(46, 46, 46, 0.12);
+        }
+
+        .card-top span, .card-flip-top span {
+            transform: translateY(50%);
+        }
+
+        /* Lower half positioning */
+        .card-bottom, .card-flip-bottom {
+            bottom: 0;
+            align-items: flex-start;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        .card-bottom span, .card-flip-bottom span {
+            transform: translateY(-50%);
+        }
+
+        /* Flip Keyframe Animations */
+        .card-flip-top {
+            transform-origin: bottom;
+            animation: flipTop 0.5s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+        }
+
+        .card-flip-bottom {
+            transform-origin: top;
+            transform: rotateX(90deg);
+            animation: flipBottom 0.5s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+            animation-delay: 0.25s;
+        }
+
+        @keyframes flipTop {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(-90deg); }
+        }
+
+        @keyframes flipBottom {
+            0% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); }
+        }
+
+        /* Center Horizontal Split Line Accent */
+        .flip-digit::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(46, 46, 46, 0.15);
+            z-index: 20;
+            transform: translateY(-50%);
+        }
+
+        /* Subtly curved notch on sides for realistic physical flip clock look */
+        .notch-left, .notch-right {
+            position: absolute;
+            top: 50%;
+            width: 6px;
+            height: 10px;
+            background-color: #fcfce1;
+            z-index: 30;
+            transform: translateY(-50%);
+        }
+        .notch-left { left: 0; border-radius: 0 4px 4px 0; }
+        .notch-right { right: 0; border-radius: 4px 0 0 4px; }
+    </style>
+</head>
+<body class="bg-clockBase text-clockText font-sans min-h-screen flex items-center justify-center p-4 antialiased select-none">
+
+    <!-- Notion Widget Container -->
+    <div class="w-full max-w-[420px] bg-clockBase p-6 sm:p-8 rounded-3xl border-2 border-clockText/10 shadow-sm flex flex-col items-center justify-between space-y-6">
+
+        <!-- Top Header & Format Toggle -->
+        <div class="w-full flex justify-between items-center px-1">
+            <span class="text-xs font-bold tracking-widest uppercase opacity-60 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Cozy Time
+            </span>
+            <button onclick="toggleTimeFormat()" id="formatBtn" class="text-[11px] font-bold px-2.5 py-1 rounded-full border border-clockText/20 bg-cardBg hover:bg-cardDivider transition text-clockText/80">
+                12H
+            </button>
+        </div>
+
+        <!-- Flip Clock Display (Hours & Minutes ONLY) -->
+        <div class="flex items-center justify-center gap-3 sm:gap-4 my-2">
+            
+            <!-- Hours Digit -->
+            <div class="relative w-24 h-28 sm:w-28 sm:h-32 flip-digit rounded-xl shadow-sm border border-clockText/10">
+                <div class="notch-left"></div>
+                <div class="notch-right"></div>
+                
+                <div id="hour-top" class="card-top font-clock text-5xl sm:text-6xl font-bold"><span>12</span></div>
+                <div id="hour-bottom" class="card-bottom font-clock text-5xl sm:text-6xl font-bold"><span>12</span></div>
+            </div>
+
+            <!-- Colon Separator -->
+            <div class="flex flex-col justify-center items-center gap-2 text-clockText opacity-40">
+                <div class="w-2.5 h-2.5 bg-clockText rounded-full"></div>
+                <div class="w-2.5 h-2.5 bg-clockText rounded-full"></div>
+            </div>
+
+            <!-- Minutes Digit -->
+            <div class="relative w-24 h-28 sm:w-28 sm:h-32 flip-digit rounded-xl shadow-sm border border-clockText/10">
+                <div class="notch-left"></div>
+                <div class="notch-right"></div>
+
+                <div id="min-top" class="card-top font-clock text-5xl sm:text-6xl font-bold"><span>00</span></div>
+                <div id="min-bottom" class="card-bottom font-clock text-5xl sm:text-6xl font-bold"><span>00</span></div>
+            </div>
+
+            <!-- AM/PM Indicator (Visible in 12H mode) -->
+            <div id="ampmContainer" class="flex flex-col justify-end h-28 sm:h-32 pb-2">
+                <span id="ampmText" class="font-clock text-xs sm:text-sm font-bold px-2 py-1 bg-cardBg rounded-lg border border-clockText/10 opacity-70">
+                    AM
+                </span>
+            </div>
+        </div>
+
+        <!-- Current Date Card -->
+        <div class="w-full bg-cardBg py-2.5 px-4 rounded-2xl border border-clockText/10 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold opacity-80 tracking-wide">
+            <i data-lucide="calendar" class="w-4 h-4 opacity-70 text-clockText"></i>
+            <span id="dateDisplay">Thursday, Oct 8, 2026</span>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let is24HourMode = false;
+        let lastHour = null;
+        let lastMin = null;
+
+        function toggleTimeFormat() {
+            is24HourMode = !is24HourMode;
+            document.getElementById('formatBtn').textContent = is24HourMode ? '24H' : '12H';
+            document.getElementById('ampmContainer').style.display = is24HourMode ? 'none' : 'flex';
+            lastHour = null; // Force trigger flip update
+            lastMin = null;
+            updateClock(true);
+        }
+
+        function createFlipAnimation(elementId, newValue) {
+            const container = document.getElementById(elementId + '-top').parentElement;
+            
+            // Remove any existing flip overlays
+            const existingFlips = container.querySelectorAll('.card-flip-top, .card-flip-bottom');
+            existingFlips.forEach(el => el.remove());
+
+            const topHalf = document.getElementById(elementId + '-top');
+            const bottomHalf = document.getElementById(elementId + '-bottom');
+
+            const oldValue = topHalf.querySelector('span').textContent;
+            if (oldValue === newValue) return;
+
+            // Create flipping elements
+            const flipTop = document.createElement('div');
+            flipTop.className = 'card-flip-top font-clock text-5xl sm:text-6xl font-bold';
+            flipTop.innerHTML = `<span>${oldValue}</span>`;
+
+            const flipBottom = document.createElement('div');
+            flipBottom.className = 'card-flip-bottom font-clock text-5xl sm:text-6xl font-bold';
+            flipBottom.innerHTML = `<span>${newValue}</span>`;
+
+            // Append flips
+            container.appendChild(flipTop);
+            container.appendChild(flipBottom);
+
+            // Update underlying static cards
+            topHalf.querySelector('span').textContent = newValue;
+
+            setTimeout(() => {
+                bottomHalf.querySelector('span').textContent = newValue;
+            }, 250);
+
+            setTimeout(() => {
+                flipTop.remove();
+                flipBottom.remove();
+            }, 550);
+        }
+
+        function updateClock(force = false) {
+            const now = new Date();
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+
+            if (!is24HourMode) {
+                hours = hours % 12;
+                hours = hours ? hours : 12; // 0 becomes 12
+            }
+            
+            const hoursFormatted = String(hours).padStart(2, '0');
+
+            // Update Hours if changed
+            if (hoursFormatted !== lastHour || force) {
+                createFlipAnimation('hour', hoursFormatted);
+                lastHour = hoursFormatted;
+            }
+
+            // Update Minutes if changed
+            if (minutes !== lastMin || force) {
+                createFlipAnimation('min', minutes);
+                lastMin = minutes;
+            }
+
+            // Update AM/PM
+            document.getElementById('ampmText').textContent = ampm;
+
+            // Update Date
+            const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        // Initialize and tick every second
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
